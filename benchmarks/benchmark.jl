@@ -1,3 +1,4 @@
+pushfirst!(LOAD_PATH, pwd())
 using FixedEffects, Random, Statistics
 Random.seed!(1234)
 N = 10000000
@@ -8,9 +9,14 @@ fes = [FixedEffect(id1), FixedEffect(id2)]
 x = rand(N)
 
 # simple problem
-@time solve_residuals!(deepcopy(x), fes)
+@time solve_residuals!(deepcopy(x), fes);
+using PProf, Profile
+_x = deepcopy(x)
+Profile.Allocs.clear()
+Profile.Allocs.@profile sample_rate=.2 solve_residuals!(_x, fes)
+PProf.Allocs.pprof(from_c=false)
 #   0.654833 seconds (1.99 k allocations: 390.841 MiB, 3.71% gc time)
-@time solve_residuals!([x x x x], fes)
+@profview solve_residuals!(deepcopy(x), fes)
 #   2.319452 seconds (7.71 k allocations: 620.016 MiB, 0.36% gc time)
 
 # More complicated problem
@@ -30,7 +36,7 @@ fes = [FixedEffect(pid), FixedEffect(fid)]
 @time solve_residuals!([x x x x], fes; double_precision = false)
 # 5.253745 seconds (285.98 k allocations: 184.213 MiB, 0.55% gc time)
 
-@time solve_residuals!([x x x x], fes; maxiter = 300)
+@profview solve_residuals!([x x x x], fes; maxiter = 300)
 # 9.889438 seconds (225.38 k allocations: 311.964 MiB, 0.33% gc time)
 
 
